@@ -15,7 +15,6 @@
 # implementation here. Superpixels are implemented both in Matlab as well as in OpenCV. Feel free to pickup the
 # implementation you liked most (and motivate the choice).
 #
-
 import numpy as np
 from skimage import io,data, segmentation, color, metrics, measure
 from skimage.future import graph
@@ -74,6 +73,52 @@ def spixel_ncut(img_path,gt_path,number_of_superpixels,superpixel_compactness):
 
     #TODOO write image with variation of information on top as the metrics
 
+
 if __name__ == '__main__':
 
-    spixel_ncut("dataset/5_29_s.bmp","dataset/5_29_s_GT.bmp",400,40)
+    img = io.imread("dataset/5_29_s.bmp")
+    img_grnd_truth = io.imread("dataset/5_29_s_GT.bmp")
+    mask_gt = get_gt_label_from_image(img_grnd_truth)
+    number_of_superpixels = 400
+    superpixel_compactness = 40
+    superpixel_mask = segmentation.slic(img,
+                                        compactness=superpixel_compactness,
+                                        n_segments=number_of_superpixels,
+                                        start_label=1)
+    # Computing an image where each superpixel has as a color, the mean of the colors
+    # in the original image of each superpixel region:
+    superpixeled_img = color.label2rgb(superpixel_mask,
+                                       img,
+                                       kind='avg',
+                                       bg_label=0)
+
+    # Region Adiacency Graph:
+    # Each node in the RAG represents a set of pixels within image with the same label in labels.
+    region_graph = graph.rag_mean_color(image=img,
+                                        labels=superpixel_mask,
+                                        mode='similarity')
+
+    # Applying the NCUT algorithm to the RAG:
+    ncut_mask = graph.cut_normalized(superpixel_mask, region_graph)
+
+    # Computing an image where each n-cutted region has as a color, the mean of the colors
+    # of the n-cutted region in the original image:
+    ncut_image = color.label2rgb(ncut_mask, img, kind='avg', bg_label=0)
+    gt_image = color.label2rgb(mask_gt, img, kind='avg', bg_label=0)
+
+    splits, merges = metrics.variation_of_information(mask_gt, ncut_mask)
+    print("I want False splits and False merges as low as possible, together.")
+    print(f'False Splits: {splits}')
+    print(f'False Merges: {merges}')
+
+    #Subplotting
+    fig, ax = plt.subplots(nrows=3, sharex=True, sharey=True, figsize=(6, 8))
+
+    ax[0].imshow(superpixeled_img.astype('uint8'))
+    ax[1].imshow(ncut_image.astype('uint8'))
+    ax[2].imshow(gt_image.astype('uint8'))
+
+    for a in ax:
+        a.axis('off')
+
+    plt.show()
