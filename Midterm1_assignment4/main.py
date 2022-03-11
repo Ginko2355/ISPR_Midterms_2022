@@ -15,11 +15,12 @@
 # implementation here. Superpixels are implemented both in Matlab as well as in OpenCV. Feel free to pickup the
 # implementation you liked most (and motivate the choice).
 #
-
+import os
 import numpy as np
 from skimage import io,data, segmentation, color, metrics, measure
 from skimage.future import graph
 from matplotlib import pyplot as plt
+import logging
 
 
 def get_gt_label_from_image(image_gt):
@@ -38,13 +39,18 @@ def get_gt_label_from_image(image_gt):
 
             gt_mask[px][py] = rgb_values_map[rgb_triple]
 
-    print(np.unique(gt_mask))
     return gt_mask
 
-def spixel_ncut(img_path,gt_path,number_of_superpixels,superpixel_compactness):
+def spixel_ncut(img_path,
+                gt_path,
+                plot_save_path,
+                number_of_superpixels,
+                superpixel_compactness):
+
     img = io.imread(img_path)
     img_grnd_truth = io.imread(gt_path)
     mask_gt = get_gt_label_from_image(img_grnd_truth)
+    
     superpixel_mask = segmentation.slic(img,
                                         compactness=superpixel_compactness,
                                         n_segments=number_of_superpixels,
@@ -71,9 +77,69 @@ def spixel_ncut(img_path,gt_path,number_of_superpixels,superpixel_compactness):
     gt_image = color.label2rgb(mask_gt, img, kind='avg', bg_label=0)
 
     splits, merges = metrics.variation_of_information(mask_gt, ncut_mask)
+    error, precision, recall = metrics.adapted_rand_error(mask_gt, ncut_mask)
 
-    #TODOO write image with variation of information on top as the metrics
+    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(7, 7))
+    float_prec = 8
+
+    textstr = f'Number of superpixel = ' + str(number_of_superpixels) + '\n' + \
+              f'Superpixel compactness = ' + str(superpixel_compactness) + '\n\n' + \
+              f'AR error = ' + str(round(error,float_prec)) + '\n' + \
+              f'AR precision = ' + str(round(precision,float_prec)) + '\n' + \
+              f'AR recall = ' + str(round(recall,float_prec)) + '\n' + \
+              f'False splits = ' + str(round(splits,float_prec)) + '\n' + \
+              f'False merges = ' + str(round(merges,float_prec))
+
+    ax[0][0].imshow(superpixeled_img.astype('uint8'))
+    ax[0][0].set_title("Super pixeled image")
+    ax[0][1].text(0.05, 0.75, textstr,fontsize=13 ,horizontalalignment='left', verticalalignment='top',
+                  bbox=dict(facecolor='wheat', alpha=0.5))
+    ax[1][0].imshow(ncut_image.astype('uint8'))
+    ax[1][0].set_title("N-cutted image")
+    ax[1][1].imshow(gt_image.astype('uint8'))
+    ax[1][1].set_title("Ground truth")
+
+    for i in range(len(ax)):
+        for a in ax[i]:
+            a.axis('off')
+
+    fig.tight_layout()
+    plt.show()
+    fig.savefig(plot_save_path)
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG, filename="logfile", filemode="a+",
+                        format="%(asctime)-15s %(levelname)-8s %(message)s")
+    for spx in [260,70,15]:
+        for spxcmpt in [10,100,1000]:
 
-    spixel_ncut("dataset/5_29_s.bmp","dataset/5_29_s_GT.bmp",400,40)
+            dir_name = "ncut_plots" + str(spx) + "_" + str(spxcmpt) + "/"
+            if not os.path.isdir(dir_name):
+                os.makedirs(dir_name)
+
+            for category in range(1, 9):
+
+                for sample in range(1, 31):
+
+                    img_name = str(category) + "_" + str(sample) + "_s"
+
+                    try:
+                        logging.info("Processing image \" " + img_name + " \" ")
+                        logging.info("Superpixel number = " + str(spx))
+                        logging.info("Superpixel compactness = " + str(spxcmpt))
+                        logging.info("#######################################################")
+                        spixel_ncut("dataset/" + img_name + ".bmp",
+                                    "dataset/" + img_name + "_GT.bmp",
+                                    dir_name + img_name + ".png",
+                                    spx, spxcmpt)
+                    except Exception as ex:
+                        print("An exception has occurred on img\" ", img_name, " \"")
+                        print("Superpixel number = ", spx)
+                        print("Superpixel compactness = ", spxcmpt)
+                        print("The exception was: ", ex)
+                        logging.info("#######################################################")
+                        logging.info("An exception has occurred on img\" " + img_name + " \"")
+                        logging.info("Superpixel number = " + str(spx))
+                        logging.info("Superpixel compactness = " + str(spxcmpt))
+                        logging.info("The exception was: " + str(ex))
+                        logging.info("#######################################################")

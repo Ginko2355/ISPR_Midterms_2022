@@ -76,6 +76,13 @@ def spixel_ncut(img_path,gt_path,number_of_superpixels,superpixel_compactness):
 
 if __name__ == '__main__':
 
+
+    for i,j in zip([10,100,20,200,30,300],[10,100,20,200,30,300]):
+        print(i, j)
+
+    raise Exception("")
+
+
     img = io.imread("dataset/5_29_s.bmp")
     img_grnd_truth = io.imread("dataset/5_29_s_GT.bmp")
     mask_gt = get_gt_label_from_image(img_grnd_truth)
@@ -112,13 +119,26 @@ if __name__ == '__main__':
     print(f'False Merges: {merges}')
 
     #Subplotting
-    fig, ax = plt.subplots(nrows=3, sharex=True, sharey=True, figsize=(6, 8))
+    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(7, 7))
 
-    ax[0].imshow(superpixeled_img.astype('uint8'))
-    ax[1].imshow(ncut_image.astype('uint8'))
-    ax[2].imshow(gt_image.astype('uint8'))
+    textstr = f'Number of superpixel = ' + str(number_of_superpixels) + '\n\n' + \
+              f'Superpixel compactness = ' + str(superpixel_compactness) + '\n\n' + \
+              f'False splits = ' + str(splits) + '\n\n' + \
+              f'False merges = ' + str(merges)
 
-    for a in ax:
-        a.axis('off')
+    ax[0][0].imshow(superpixeled_img.astype('uint8'))
+    ax[0][0].set_title("Super pixeled image")
+    ax[0][1].text(0.05, 0.75, textstr, horizontalalignment='left',verticalalignment='top',
+                  bbox=dict(facecolor='wheat', alpha=0.5))
+    ax[1][0].imshow(ncut_image.astype('uint8'))
+    ax[1][0].set_title("N-cutted image")
+    ax[1][1].imshow(gt_image.astype('uint8'))
+    ax[1][1].set_title("Ground truth")
 
+
+    for i in range(len(ax)):
+        for a in ax[i]:
+            a.axis('off')
+
+    fig.tight_layout()
     plt.show()
