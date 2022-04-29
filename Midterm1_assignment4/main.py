@@ -65,8 +65,8 @@ def spixel_ncut(img_path,
     # Region Adiacency Graph:
     # Each node in the RAG represents a set of pixels within image with the same label in labels.
     region_graph = graph.rag_mean_color(image=img,
-                                        labels=superpixel_mask,
-                                        mode='similarity')
+                                                   labels=superpixel_mask,
+                                                   mode='similarity')
 
     # Applying the NCUT algorithm to the RAG:
     ncut_mask = graph.cut_normalized(superpixel_mask, region_graph)
@@ -84,9 +84,6 @@ def spixel_ncut(img_path,
 
     textstr = f'Number of superpixel = ' + str(number_of_superpixels) + '\n' + \
               f'Superpixel compactness = ' + str(superpixel_compactness) + '\n\n' + \
-              f'AR error = ' + str(round(error,float_prec)) + '\n' + \
-              f'AR precision = ' + str(round(precision,float_prec)) + '\n' + \
-              f'AR recall = ' + str(round(recall,float_prec)) + '\n' + \
               f'False splits = ' + str(round(splits,float_prec)) + '\n' + \
               f'False merges = ' + str(round(merges,float_prec))
 
