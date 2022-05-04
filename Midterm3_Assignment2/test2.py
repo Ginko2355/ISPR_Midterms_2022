@@ -38,18 +38,17 @@ def build_model(hp):
                             kernel_size=(5, 5),
                             activation='relu'))
 
-    model.add(layers.MaxPool2D(pool_size=(2, 2)))
-
     model.add(layers.Flatten())
     model.add(layers.Dense(hp.Int('n_units', min_value=100, max_value=1000, step=100), activation='relu'))
-    model.add(layers.Dense(number_of_classes, activation='softmax'))
-    #model.compile(optimizer="adam",
-    #              loss="sparse_categorical_crossentropy",
-    #              metrics=["accuracy"],)
+    model.add(layers.Dense(number_of_classes))
+    model.compile(optimizer="adam",
+                  loss="sparse_categorical_crossentropy",
+                  metrics=["accuracy"],)
+
+    return model
 
 
-
-tuner = RandomSearch(build_model(),
+tuner = RandomSearch(build_model,
                      objective='val_accuracy',
                      max_trials=1,
                      executions_per_trial=3,

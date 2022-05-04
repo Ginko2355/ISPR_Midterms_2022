@@ -48,10 +48,10 @@ class HyperCNN(kt.HyperModel):
         # will generate a 1 x 1 x n_filters tensor, which can't be max-pooled with stride=2
 
         model.add(layers.Flatten())
-        model.add(layers.Dense(hp.Int('n_units', min_value=100, max_value=2000, step=100), activation='softmax'))
-        model.add(layers.Dense(number_of_classes, activation='softmax'))
+        model.add(layers.Dense(hp.Int('n_units', min_value=100, max_value=2000, step=100), activation='relu'))
+        model.add(layers.Dense(10))
         model.compile(optimizer="adam",
-                      loss="sparse_categorical_crossentropy",
+                      loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                       metrics=["accuracy"])
         model.summary()
         return model
@@ -70,7 +70,7 @@ tuner = RandomSearch(HyperCNN(),
                      executions_per_trial=2,
                      directory="tuner_res")
 
-early_stopping = callbacks.EarlyStopping(monitor='val_loss', patience=5)
+early_stopping = callbacks.EarlyStopping(monitor='val_accuracy', patience=5)
 tuner.search(x_train, y_train, epochs=200, validation_split=0.3, callbacks=[early_stopping])
 
 best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
